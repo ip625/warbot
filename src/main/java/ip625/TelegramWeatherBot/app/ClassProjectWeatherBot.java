@@ -92,7 +92,9 @@ public class ClassProjectWeatherBot extends TelegramLongPollingBot {
             SQLconnection.Conn();
             SQLconnection.WriteID (chat_id);
             SQLconnection.CloseDB();
-        } catch (ClassNotFoundException | SQLException e) {
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        } catch (SQLException e) {
             e.printStackTrace();
         }
     }
@@ -105,7 +107,10 @@ public class ClassProjectWeatherBot extends TelegramLongPollingBot {
             SQLconnection.EntrySubscribe(chat_id);
             SQLconnection.CloseDB();
             sendMessage(chat_id, "Вы успешно подписаны на рассылку.");
-        } catch (ClassNotFoundException | SQLException e) {
+        } catch (ClassNotFoundException  e) {
+            e.printStackTrace();
+            sendMessage(chat_id, "К сожалению, с созданием подписки возникли проблемы.");
+        } catch (SQLException e) {
             e.printStackTrace();
             sendMessage(chat_id, "К сожалению, с созданием подписки возникли проблемы.");
         }
@@ -121,10 +126,14 @@ public class ClassProjectWeatherBot extends TelegramLongPollingBot {
                 SQLconnection.EntryUnsubscribe(chat_id);
                 SQLconnection.CloseDB();
                 sendMessage(chat_id, "Все ваши подписки успешно отменены.");
-            } catch (ClassNotFoundException | SQLException e) {
+            } catch (ClassNotFoundException e) {
                 e.printStackTrace();
                 sendMessage(chat_id, "К сожалению, с отменой подписки(подписок) возникли проблемы.");
-            }
+            } catch (SQLException e) {
+                e.printStackTrace();
+                sendMessage(chat_id, "К сожалению, с отменой подписки(подписок) возникли проблемы.");
+            } 
+        
 
     }
 
@@ -198,9 +207,10 @@ public class ClassProjectWeatherBot extends TelegramLongPollingBot {
                 SQLconnection.Conn();
                 list = SQLconnection.getSubscribers();
                 SQLconnection.CloseDB();
-            } catch (ClassNotFoundException | SQLException e) {
+            } catch (ClassNotFoundException e) {
                 e.printStackTrace();
-
+            }  catch (SQLException e) {
+                e.printStackTrace();
             }
 
             Iterator<String[]> iter = list.iterator();
