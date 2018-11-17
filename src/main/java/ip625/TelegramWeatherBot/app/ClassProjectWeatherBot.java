@@ -10,7 +10,7 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import java.sql.SQLException;
 import java.util.*;
 
-import static java.lang.Thread.onSpinWait;
+//import static java.lang.Thread.onSpinWait;
 
 public class ClassProjectWeatherBot extends TelegramLongPollingBot {
     List<Long> chatIDs = new ArrayList<Long>(); //локальный список ID данной сессиии
@@ -99,7 +99,12 @@ public class ClassProjectWeatherBot extends TelegramLongPollingBot {
     //добавляет подписку на последний обработанный город
     private void createSubscription(long chat_id) {
         while (threadGroup.activeCount() > 1)
-            onSpinWait(); //возможно не нужно, т.к. SQlite имеет свою очередь запросов
+            try {
+                wait(1000); //возможно не нужно, т.к. SQlite имеет свою очередь запросов
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
         try {
             SQLconnection.Conn();
             SQLconnection.EntrySubscribe(chat_id);
@@ -115,7 +120,12 @@ public class ClassProjectWeatherBot extends TelegramLongPollingBot {
     //удаляет все подписки для данного чата
     private void deleteSubscription(long chat_id) {
         while (threadGroup.activeCount() > 1)
-            onSpinWait();//возможно не нужно, т.к. SQlite имеет свою очередь запросов
+            try {
+                wait(1000); //возможно не нужно, т.к. SQlite имеет свою очередь запросов
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
             try {
                 SQLconnection.Conn();
                 SQLconnection.EntryUnsubscribe(chat_id);

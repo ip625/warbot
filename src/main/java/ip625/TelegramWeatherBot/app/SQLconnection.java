@@ -11,12 +11,13 @@ import java.util.List;
 
 
 public class SQLconnection {
-    public static Connection conn;
-    public static Statement statmt;
-    public static ResultSet resSet;
+    Object lock = new Object();
+    static Connection conn;
+    static Statement statmt;
+    static ResultSet resSet;
 
     // --------ПОДКЛЮЧЕНИЕ К БАЗЕ ДАННЫХ--------
-    public static void Conn() throws ClassNotFoundException, SQLException  {
+    public static  void Conn() throws ClassNotFoundException, SQLException  {
         conn = null;
         Class.forName("org.sqlite.JDBC");
         conn = DriverManager.getConnection("jdbc:sqlite:BotUsers.s3db");
