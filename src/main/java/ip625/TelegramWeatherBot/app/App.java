@@ -41,8 +41,7 @@ public class App {
             SQLconnection.CloseDB();
         } catch (ClassNotFoundExceptione) {
             e.printStackTrace();
-        }
-         catch (SQLException e) {
+        } catch (SQLException e) {
             e.printStackTrace();
         }
 
