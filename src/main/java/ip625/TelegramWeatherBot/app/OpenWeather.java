@@ -38,7 +38,7 @@ class  OpenWeather {
                 lat = arr[0];
                 lon = arr[1];
 
-            } catch (ClassNotFoundException | SQLException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
             }
 
@@ -88,7 +88,7 @@ class  OpenWeather {
             }
             SQLconnection.CloseDB();
 
-        } catch (ClassNotFoundException | SQLException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return "ошибка";
         }
@@ -147,7 +147,7 @@ class  OpenWeather {
             //также сохраняю кэш погоды и город (если информация свежая)
             if (!weatherFromCache) SQLconnection.MemorizeWeather(city, str, lat, lon);
             SQLconnection.CloseDB();
-        } catch (ClassNotFoundException | SQLException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
 

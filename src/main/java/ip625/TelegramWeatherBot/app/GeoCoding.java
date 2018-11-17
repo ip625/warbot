@@ -70,9 +70,7 @@ class GeoCoding {
                     SQLconnection.MemorizeCity(msg, arr[0], arr[1]);
                 }
                 SQLconnection.CloseDB();
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace();
-            }  catch (SQLException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
             }
 

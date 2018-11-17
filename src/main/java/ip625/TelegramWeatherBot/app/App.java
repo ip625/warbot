@@ -39,9 +39,7 @@ public class App {
             SQLconnection.CreateDB();
             bot.chatIDs.addAll(SQLconnection.getChatIDs());
             SQLconnection.CloseDB();
-        } catch (ClassNotFoundExceptione) {
-            e.printStackTrace();
-        } catch (SQLException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
