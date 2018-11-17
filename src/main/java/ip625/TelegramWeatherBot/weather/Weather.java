@@ -1,6 +1,7 @@
 
 package ip625.TelegramWeatherBot.weather;
 
+//формат данных от OpenWeather
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 

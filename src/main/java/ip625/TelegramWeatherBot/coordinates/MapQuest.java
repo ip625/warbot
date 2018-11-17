@@ -1,5 +1,6 @@
 package ip625.TelegramWeatherBot.coordinates;
 
+//Формат данных от MapQuest
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 

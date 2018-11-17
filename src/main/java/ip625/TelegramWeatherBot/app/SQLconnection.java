@@ -10,45 +10,45 @@ import java.util.Arrays;
 import java.util.List;
 
 
-public class SQLconnection {
+class SQLconnection {
     Object lock = new Object();
-    static Connection conn;
-    static Statement statmt;
-    static ResultSet resSet;
+    private static Connection conn;
+    private static Statement statmt;
+    private static ResultSet resSet;
 
     // --------ПОДКЛЮЧЕНИЕ К БАЗЕ ДАННЫХ--------
-    public static  void Conn() throws ClassNotFoundException, SQLException  {
+
+    //Conn - устанавливает связь с базой
+    static  void Conn() throws ClassNotFoundException, SQLException  {
         conn = null;
         Class.forName("org.sqlite.JDBC");
         conn = DriverManager.getConnection("jdbc:sqlite:BotUsers.s3db");
         statmt = conn.createStatement();
     }
 
-    // --------Создание таблиц--------
-    public static void CreateDB() throws SQLException {
+    //CreateDB--------Создание таблиц--------
+    static void CreateDB() throws SQLException {
         //сформировать строки показалось компактнее и быстрее, чем через preparedStatement
 
         //requests = имеющиеся чаты, статус подписки
         statmt.execute("CREATE TABLE if not exists 'requests' " +
                 "('id' INTEGER PRIMARY KEY AUTOINCREMENT, 'chat_id' INT, 'city' text, 'lat' text, 'lon' text, 'subscription' INT);");
-        //cities - лог городов - избавляет от необходимости повторно искать координаты
-
-        //благодаря geocoding позволяет постепенно коллекционировать названия русских городов кириллицей
+        //cities - лог городов - избавляет от необходимости повторно искать координаты через api
         statmt.execute("CREATE TABLE if not exists 'cities' " +
                 "('id' INTEGER PRIMARY KEY AUTOINCREMENT, 'city' text, 'lat' text, 'lon' text);");
-        //лог погоды по городу с координатами, чтобы не донимать сервис слишком часто. Считаем, что
-        //"срок годности" погоды - 2 часа
+        //лог погоды по городу с координатами, чтобы не донимать сервис слишком часто, особенно на этапе рассылки подписки
+        // Считаем, что "срок годности" погоды - 2 часа
+
         statmt.execute("CREATE TABLE if not exists 'weather' " +
                 "('id' INTEGER PRIMARY KEY AUTOINCREMENT, 'city' text, 'description' text, 'lat' text, 'lon' text, 'expiration' INT);");
 
         statmt.execute("CREATE TABLE if not exists 'userIDs' " +
                 "('id' INTEGER PRIMARY KEY AUTOINCREMENT, 'chat_id' INT,  UNIQUE(chat_id));");
-
     }
 
 
-        // --------Заполнение таблицы requests --------
-    public static void WriteDB(long chat_id, String city, String lat, String lon) throws SQLException{
+        //WriteDB --------Заполнение таблицы requests --------
+    static void WriteDB(long chat_id, String city, String lat, String lon) throws SQLException{
 
         //если раньше уже были запросы без подписки, затираем их:
         resSet = statmt.executeQuery("SELECT * FROM requests where chat_id="
@@ -67,28 +67,28 @@ public class SQLconnection {
         }
     }
 
-    //-----Заполнение userIDs ---------------
-    public static void WriteID(long chat_id) throws SQLException {
+    //WriteID -----Заполнение таблицы userIDs ---------------
+    static void WriteID(long chat_id) throws SQLException {
 
         statmt.execute("INSERT INTO 'userIDs' ('chat_id') VALUES (" + chat_id + "); ");
         System.out.println("Сохранен новый ID " + chat_id);
     }
-    // --------Добавление подписчика--------
-    public static void EntrySubscribe (long chat_id) throws SQLException{
+    //EntrySubscribe--------Добавление подписчика--------
+    static void EntrySubscribe (long chat_id) throws SQLException{
 
         statmt.executeUpdate("UPDATE requests set subscription = 1 where chat_id=" + chat_id + ";");
         System.out.println("Подписка для " + chat_id + " создана");
     }
 
-    // --------Удаление подписчика--------
-    public static void EntryUnsubscribe (long chat_id) throws SQLException{
+    //EntryUnsubscribe--------Удаление подписчика--------
+    static void EntryUnsubscribe (long chat_id) throws SQLException{
 
         statmt.executeUpdate("DELETE FROM requests where chat_id=" + chat_id + " AND subscription=1;");
         System.out.println("Подписки для " + chat_id + " отменены");
     }
 
-    // -------- Вывод списка подписчиков--------
-    public static List<String[]> getSubscribers() throws SQLException{
+    //getSubscribers-------- Вывод списка подписчиков--------
+    static List<String[]> getSubscribers() throws SQLException{
 
         List<String[]> list = new ArrayList<String[]>();
         resSet = statmt.executeQuery("SELECT * FROM requests where subscription=1;");
@@ -102,8 +102,8 @@ public class SQLconnection {
         return list;
     }
 
-    // --------Вывод списка знакомых ID ----------------
-    public static List<Long> getChatIDs() throws SQLException{
+    //getChatIDs--------Вывод списка знакомых ID ----------------
+    static List<Long> getChatIDs() throws SQLException{
 
         List<Long> list = new ArrayList<Long>();
         resSet = statmt.executeQuery("SELECT * FROM userIDs;");
@@ -118,9 +118,9 @@ public class SQLconnection {
     }
 
 
-    // --------Заполнение таблицы cities --------
-            //добавляем новый город с координатами
-    public static void MemorizeCity (String city, String lat, String lon) throws SQLException{
+    //MemorizeCity --------Заполнение таблицы cities --------
+    // добавляем новый город с координатами
+    static void MemorizeCity (String city, String lat, String lon) throws SQLException{
 
         ResultSet cityResSet = statmt.executeQuery("SELECT * FROM cities where city='" + city + "';");
         if (cityResSet.next() && cityResSet.getString("lat") != null && cityResSet.getString("lon").length() > 0)
@@ -134,9 +134,9 @@ public class SQLconnection {
     }
 
 
-    // --------Поиск города в таблице cities --------
-        //возвращает координаты
-    public static String[] RecallCity(String city) throws SQLException{
+    //RecallCity--------Поиск города в таблице cities --------
+    //возвращает координаты
+    static String[] RecallCity(String city) throws SQLException{
 
         String[] arr = new String[2];
         resSet = statmt.executeQuery("SELECT * FROM cities where city='"+ city +"';");
@@ -152,9 +152,9 @@ public class SQLconnection {
         return arr;
     }
 
-    // --------Заполнение таблицы weather --------
-        //кэш погоды, чтобы не формировать повторные запросы в течение 2 часов
-    public static void MemorizeWeather (String city, String description, String lat, String lon) throws SQLException{
+    //MemorizeWeather --------Заполнение таблицы weather --------
+    //кэш погоды, чтобы не формировать повторные запросы в течение 2 часов
+    static void MemorizeWeather (String city, String description, String lat, String lon) throws SQLException{
 
         long time = System.currentTimeMillis() / 60000;
         statmt.executeUpdate("DELETE FROM weather where expiration<=" + time + ";");
@@ -167,8 +167,8 @@ public class SQLconnection {
     }
 
 
-    // --------Загрузка погоды для города из кэша в таблице weather --------
-    public static String RecallWeather(String city, String lat, String lon) throws SQLException{
+    //RecallWeather--------Загрузка погоды для города из кэша в таблице weather --------
+    static String RecallWeather(String city, String lat, String lon) throws SQLException{
 
         //удаляем устаревшие записи
         long time = System.currentTimeMillis() / 60000;
@@ -180,17 +180,15 @@ public class SQLconnection {
             if (//resSet.getString("city").equals(city) ||
                     (resSet.getString("lat").equals(lat)
                     && resSet.getString("lon").equals(lon))
-            ) {
-               // System.out.println("Погода из кэша");
+            )
                 return resSet.getString("description");
-            }
         }
         //если не нашли:
         return "";
     }
 
-    // --------Закрытие базы--------
-    public static void CloseDB() throws  SQLException {
+    //CloseDB --------Закрытие базы--------
+    static void CloseDB() throws  SQLException {
         conn.close();
         statmt.close();
         resSet.close();

@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit;
 
 class Timer {
 
-    //таймер для ежедневной рассылки (скопировано из Инета)
+    //setTimer - таймер для ежедневной рассылки (скопировано из Инета)
     static void setTimer(ClassProjectWeatherBot bot) {
         LocalDateTime localNow = LocalDateTime.now();
         ZoneId currentZone = ZoneId.of("Europe/Moscow");

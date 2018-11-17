@@ -10,11 +10,12 @@ import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
-import java.sql.SQLException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 class GeoCoding {
+
+    //getCoordinates - добывает координаты по названию
     String[] getCoordinates (String msg) throws UnsupportedEncodingException {
         String[] arr = new String[3];
         String str;
@@ -24,11 +25,9 @@ class GeoCoding {
 
         try{
             URL url = new URL(geoRequest);
-
             HttpURLConnection con = (HttpURLConnection) url.openConnection();
 
             BufferedReader in = new BufferedReader(
-
                     new InputStreamReader(con.getInputStream(), "UTF-8"));
 
             String inputLine;
@@ -48,9 +47,10 @@ class GeoCoding {
             if (str.length() < 3) return null;
 
             System.out.println("Ответ MapQuest получен\r\n");
+
+            //собственно, запрос
             MapQuestGSONDecoder decoder = new MapQuestGSONDecoder();
             MapQuest mapQuest = decoder.parseMapQuest(str);
-
 
             arr[0] = mapQuest.getLatitude();
             arr[1] = mapQuest.getLongitude();
@@ -60,13 +60,15 @@ class GeoCoding {
                 SQLconnection.Conn();
                 SQLconnection.CreateDB();
                 if (arr[0]  != null && arr[1] != null) {
+
                     //Если локализованное название  - русское, то тоже сохраняем его в базу
-                    // и используем для вывода пользователю
+                    // и используем для вывода пользователю:
                     if (!isCyrillic(arr[2])) {
                         arr[2] = msg;
                     } else
                         SQLconnection.MemorizeCity(arr[2], arr[0], arr[1]);
 
+                    //иначе сохраняем только название из сообщения пользователя
                     SQLconnection.MemorizeCity(msg, arr[0], arr[1]);
                 }
                 SQLconnection.CloseDB();
@@ -76,16 +78,13 @@ class GeoCoding {
 
             System.out.println(arr.toString());
             return arr;
-
         }
         catch (Exception e) {
             return null;
         }
-
-
     }
 
-    //содержит ли строка кирилицу?
+    //isCyrillic - содержит ли строка кирилицу?
     static boolean isCyrillic(String str) {
         Pattern p = Pattern.compile("[а-яёА-ЯЁ]+");
         Matcher m = p.matcher(str);

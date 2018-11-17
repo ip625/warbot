@@ -1,5 +1,6 @@
 package ip625.TelegramWeatherBot.coordinates;
 
+//парсим JSON для MapQuest
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -22,7 +23,7 @@ public class MapQuestGSONDecoder {
 
         //System.out.println(mapQuest);
 
-        jsonString = gson.toJson(list[0]);
+        //jsonString = gson.toJson(list[0]);
         //System.out.println(jsonString);
 
         return list[0];

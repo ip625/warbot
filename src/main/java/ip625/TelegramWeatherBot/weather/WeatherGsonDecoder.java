@@ -1,5 +1,6 @@
 package ip625.TelegramWeatherBot.weather;
 
+//парсер для JSON от OpenWeather
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 

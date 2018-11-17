@@ -7,17 +7,15 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
-import java.sql.SQLException;
+import java.io.IOException;
 import java.util.*;
-
-//import static java.lang.Thread.onSpinWait;
 
 public class ClassProjectWeatherBot extends TelegramLongPollingBot {
     List<Long> chatIDs = new ArrayList<Long>(); //локальный список ID данной сессиии
-                                            // (предыдущие ID подгружаются в него при инициализации)
+                                            // (предыдущие ID подгружаются в него при инициализации бота)
     private ThreadGroup threadGroup = new ThreadGroup("DownloadThreads");
 
-    //обработка входящих сообщений
+    //onUpdateReceived - обработка входящих сообщений
     @Override
     public void onUpdateReceived(Update update) {
 
@@ -26,6 +24,7 @@ public class ClassProjectWeatherBot extends TelegramLongPollingBot {
             Thread thread = new Thread();
             final long chat_id = update.getMessage().getChatId();
 
+            //проверяем, что нам не прислали локацию
             if (update.getMessage().hasLocation()) {
                 Location location = update.getMessage().getLocation();
                 final Float lat = location.getLatitude();
@@ -37,12 +36,13 @@ public class ClassProjectWeatherBot extends TelegramLongPollingBot {
                         prepareAndSendResponse(chat_id, "", lat, lon);
                     }
                 });
+
+            //обработка текстовых сообщений:
             } else if (update.getMessage().hasText()) {
                 final String message_text = update.getMessage().getText().trim();
                 System.out.println("\n\r" + message_text);
 
-
-                //проверяем, что не было спец. команд
+            //проверяем, что не было спец. команд
                 if (message_text.equals("/subscribe"))
                         thread = new Thread(threadGroup, new Runnable() {
                             @Override
@@ -57,13 +57,11 @@ public class ClassProjectWeatherBot extends TelegramLongPollingBot {
                                 deleteSubscription(chat_id);
                             }
                         });
-                //в новых чатах высылаем первичное приветствие
+            //в новых чатах высылаем первичное приветствие
                 else if (!chatIDs.contains(chat_id) || message_text.equals("/start")) {
                         meetAndGreet (chat_id);
-
                 }
-
-                //стандартная обработка - считаем, что нам указали локацию, пытаемся добыть прогноз
+            //стандартная обработка сообщения - считаем, что нам указали локацию, пытаемся добыть прогноз
                 else {
                         thread = new Thread(threadGroup, new Runnable() {
                             @Override
@@ -72,14 +70,13 @@ public class ClassProjectWeatherBot extends TelegramLongPollingBot {
                             }
                         });
                 }
-
             }
             //запускаем выбранный поток - отдельно, чтобы не подвешивать очередь сообщений
             thread.start();
         }
     }
 
-    //обрабатывает новый чат
+    //meetAndGreet - обрабатывает новый чат
     private void meetAndGreet(long chat_id) {
         sendMessage(chat_id, "Здравствуйте! У меня можно узнать погоду " +
                 "и подписаться на прогнозы." +
@@ -96,7 +93,8 @@ public class ClassProjectWeatherBot extends TelegramLongPollingBot {
             e.printStackTrace();
         }
     }
-    //добавляет подписку на последний обработанный город
+
+    //createSubscription - добавляет подписку на последний обработанный город
     private void createSubscription(long chat_id) {
         while (threadGroup.activeCount() > 1)
             try {
@@ -104,7 +102,6 @@ public class ClassProjectWeatherBot extends TelegramLongPollingBot {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-
         try {
             SQLconnection.Conn();
             SQLconnection.EntrySubscribe(chat_id);
@@ -114,10 +111,9 @@ public class ClassProjectWeatherBot extends TelegramLongPollingBot {
             e.printStackTrace();
             sendMessage(chat_id, "К сожалению, с созданием подписки возникли проблемы.");
         }
-
     }
 
-    //удаляет все подписки для данного чата
+    //deleteSubscription - удаляет все подписки для данного чата
     private void deleteSubscription(long chat_id) {
         while (threadGroup.activeCount() > 1)
             try {
@@ -135,12 +131,11 @@ public class ClassProjectWeatherBot extends TelegramLongPollingBot {
                 e.printStackTrace();
                 sendMessage(chat_id, "К сожалению, с отменой подписки(подписок) возникли проблемы.");
             }
-        
-
     }
 
-    //ОСНОВНОЙ МЕТОД: запрашиваем прогноз и отправляем пользователю
+    //prepareAndSendResponse - ОСНОВНОЙ МЕТОД: запрашиваем прогноз и отправляем пользователю
     private void prepareAndSendResponse (long chat_id, String message_text, float lat, float lon){
+
         String defaultText = "Населенный пункт не распознан. " +
                 "Пожалуйста, попробуйте записать локацию с указанием региона и страны" +
                 ", или просто отправьте мне свое местоположение.";
@@ -150,19 +145,23 @@ public class ClassProjectWeatherBot extends TelegramLongPollingBot {
          String latitude  =  (lat == 190) ? "" : String.format ("%.2f", lat);
          String longitude = (lon == 190) ? "" : String.format ("%.2f", lon);
 
-         String text = openWeather.getOpenWeather(message_text, latitude, longitude, chat_id, false);
+        String text = null;
+        try {
+            text = openWeather.getOpenWeather(message_text, latitude, longitude, chat_id, false);
+        } catch (IOException e) {
+            e.printStackTrace();
+            sendMessage(chat_id, defaultText); //извинения
+            return;
+        }
 
-         if (!text.equals("ошибка")){
-                    //отправляем подготовленный ответ:
-                    sendMessage(chat_id, text);
-                    System.out.println("Отправлено пользователю: \"" + text + "\"");
-                    //и предлагаем подписаться, объясняя как в будущем отписаться.
-                    explainSubscription(chat_id, text);
-            } else
-                sendMessage(chat_id, defaultText); //извинения
+        //если все прошло удачно - отправляем подготовленный ответ:
+        sendMessage(chat_id, text);
+        System.out.println("Отправлено пользователю: \"" + text + "\"");
+        //и предлагаем подписаться, объясняя как в будущем отписаться.
+        explainSubscription(chat_id, text);
     }
 
-    //отправка сообщений пользователю
+    //sendMessage - отправка сообщений пользователю
     private void sendMessage (long chat_id, String text) {
         SendMessage message = new SendMessage()
                 .setChatId(chat_id)
@@ -174,7 +173,7 @@ public class ClassProjectWeatherBot extends TelegramLongPollingBot {
         }
     }
 
-    //объясняет пользователю как подписаться и отписаться
+    //explainSubscription - объясняет пользователю как подписаться и отписаться
     private void explainSubscription(long chat_id, String text) {
         int cityStart = text.indexOf("локации ") + 8;
         int cityEnd = text.indexOf('.', cityStart);
@@ -199,7 +198,7 @@ public class ClassProjectWeatherBot extends TelegramLongPollingBot {
 
    // ================== Р А С С Ы Л К А ==================
 
-    //запускаемое по расписанию задание по рассылке для подписчиков
+    //updateSubscribers - запускаемое по расписанию задание по рассылке для подписчиков
     Runnable updateSubscribers = new Runnable() {
         @Override
         public void run() {
@@ -216,15 +215,20 @@ public class ClassProjectWeatherBot extends TelegramLongPollingBot {
             Iterator<String[]> iter = list.iterator();
             OpenWeather openWeather = new OpenWeather();
 
+            //обрабатываем по одному
             while (iter.hasNext()) {
                 String[] arr = iter.next();
                 long chat_id = Long.parseLong(arr[0]);
-                String text = openWeather.getOpenWeather(arr[1], arr[2], arr[3], chat_id, true);
+                String text = null;
+                try {
+                    text = openWeather.getOpenWeather(arr[1], arr[2], arr[3], chat_id, true);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    continue;
+                }
 
-                    if (!text.equals("ошибка")) {
-                        sendMessage(chat_id, text);
-                        System.out.println("Отправлено по рассылке: \"" + text + "\"");
-                    }
+                sendMessage(chat_id, text);
+                System.out.println("Отправлено по рассылке: \"" + text + "\"");
             }
         }
     };
